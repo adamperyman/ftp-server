@@ -1,3 +1,8 @@
+#ifdef _WIN32
+#include <Winsock2.h>
+#endif
+
+#include <ws2tcpip.h>
 #include "macros.h"
 
 SOCKET s                                = 0;

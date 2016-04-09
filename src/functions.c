@@ -1,8 +1,11 @@
+#ifdef _WIN32
+#include <Winsock2.h>
+#endif
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
-#include <winsock2.h>
 #include <ws2tcpip.h>
 #include "macros.h"
 #include "globals.h"
