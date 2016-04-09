@@ -1,3 +1,3 @@
 # FTP-Server
 
-A simple single-threaded FTP server written in C.
+An IP-agnostic single-threaded FTP server
