@@ -8,91 +8,46 @@
 #include "globals.h"
 
 void _runFTPServer(void) {
-  extern SOCKET s = 0;
-  extern SOCKET ns = 0;
-  extern SOCKET ns_data = 0;
-  extern SOCKET s_data_act = 0;
+  extern SOCKET s;
+  extern SOCKET ns;
+  extern SOCKET ns_data;
+  extern SOCKET s_data_act;
 
-  extern char send_buffer[200] = { '\0' };
-  extern char receive_buffer[200] = { '\0' };
+  extern char send_buffer[200];
+  extern char receive_buffer[200];
+  extern char portNum[NI_MAXSERV];
+  extern char clientHost[NI_MAXHOST];
+  extern char clientService[NI_MAXSERV];
 
-  extern int active = 0;
-  extern int n = 0;
-  extern int bytes = 0;
-  extern int addrlen = 0;
+  extern int active;
+  extern int n;
+  extern int bytes;
+  extern int addrlen;
+  extern int iResult;
 
-  extern struct sockaddr_storage localaddr = {};
-  extern struct sockaddr_storage remoteaddr = {};
+  extern struct sockaddr_storage localaddr;
+  extern struct sockaddr_storage remoteaddr;
+  extern struct addrinfo hints;
+  extern struct addrinfo* result;
+  extern struct addrinfo* ipv4;
+  extern struct addrinfo* ipv6;
+  extern struct addrinfo* pAddrInfo = result;
+  memset(&hints, 0, sizeof(struct addrinfo));
 
   // Setup IP-agnostic structs.
   memset(&localaddr, 0, sizeof(localaddr));
   memset(&remoteaddr, 0, sizeof(remoteaddr));
 
-  _setupWinsock();
-  _printHeading();
-
-  // Setup addrinfo struct to determine IP version.
-  struct addrinfo hints = {};
-  memset(&hints, 0, sizeof(struct addrinfo));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_protocol = IPPROTO_TCP;
-  hints.ai_flags = AI_PASSIVE;
-
-  struct addrinfo *result = NULL;
-
-  int iResult = 0;
-  char portNum[NI_MAXSERV] = { '\0' };
-
   // Client IP.
-  char clientHost[NI_MAXHOST] = { '\0' };
   memset(clientHost, 0, sizeof(clientHost));
 
   // Client port.
-  char clientService[NI_MAXSERV] = { '\0' };
   memset(clientService, 0, sizeof(clientService));
 
-  // Determine listening port.
-  if (argc == 2)
-  {
-      iResult = getaddrinfo(NULL, argv[1], &hints, &result);
-      sprintf(portNum, "%s", argv[1]);
-  }
-  else
-  {
-      iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
-      sprintf(portNum, "%s", DEFAULT_PORT);
-  }
-  freeaddrinfo(result);
-
-  if (iResult != 0)
-  {
-      fprintf(stderr, "getaddrinfo failed: %d\n", iResult);
-      WSACleanup();
-      exit(1);
-  }
-
-  // Find IP version.
-  struct addrinfo* ipv4 = NULL;
-  struct addrinfo* ipv6 = NULL;
-  struct addrinfo* pAddrInfo = result;
-
-  while (pAddrInfo)
-  {
-      if ((!ipv4) && (pAddrInfo->ai_family == AF_INET))
-      {
-          ipv4 = pAddrInfo;
-      }
-      else if ((!ipv6) && (pAddrInfo->ai_family == AF_INET6))
-      {
-          ipv6 = pAddrInfo;
-      }
-      else
-      {
-          break;
-      }
-      pAddrInfo = pAddrInfo->ai_next;
-  }
+  _setupWinsock();
+  _printHeading();
+  _determineListeningPort();
+  _determineIPVersion();
 
   // Initialize welcome socket.
   if (ipv4)
@@ -533,4 +488,39 @@ void _printHeading(void) {
   fprintf(stdout, "* Author:  Adam Peryman             *\n");
   fprintf(stdout, "* Contact: adam.peryman@gmail.com   *\n");
   fprintf(stdout, "*************************************\n");
+}
+
+void _determineListeningPort(void) {
+  if (argc == 2) {
+    iResult = getaddrinfo(NULL, argv[1], &hints, &result);
+    sprintf(portNum, "%s", argv[1]);
+  } else {
+    iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
+    sprintf(portNum, "%s", DEFAULT_PORT);
+  }
+  freeaddrinfo(result);
+
+  if (iResult != 0) {
+    fprintf(stderr, "Error: getaddrinfo failed: %d\n", iResult);
+    WSACleanup();
+    exit(1);
+  }
+}
+
+void _determineIPVersion(void) {
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_protocol = IPPROTO_TCP;
+  hints.ai_flags = AI_PASSIVE;
+
+  while (pAddrInfo) {
+    if ((!ipv4) && (pAddrInfo->ai_family == AF_INET)) {
+        ipv4 = pAddrInfo;
+    } else if ((!ipv6) && (pAddrInfo->ai_family == AF_INET6)) {
+      ipv6 = pAddrInfo;
+    } else {
+      break;
+    }
+    pAddrInfo = pAddrInfo->ai_next;
+  }
 }
